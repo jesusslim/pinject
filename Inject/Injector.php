@@ -11,15 +11,31 @@ namespace Inject;
 use Closure;
 use ReflectionClass;
 use ReflectionFunction;
+use ReflectionMethod;
 class Injector implements InjectorInterface
 {
 
-    const INDEX_CONCRETE = 0;
-    const INDEX_CACHED = 1;
-    protected $objects = [];
-    protected $caches = [];
-    protected $data = [];
+    const INDEX_CONCRETE = 0; //the concrete
+    const INDEX_CACHED = 1; //cached it after produce
+    protected $objects = []; //the objects not instantiated when map
+    protected $caches = []; //caches of the produced objects
+    protected $data = []; //the objects instantiated when map
+    protected $MUST_REG = false; //is MUST_REG is true,Inject won't produce the concrete unmapped
 
+    /**
+     * set MUST_REG
+     */
+    public function mustReg(){
+        $this->MUST_REG = true;
+    }
+
+    /**
+     * map an object that not instantiated
+     * @param $key
+     * @param $obj
+     * @param bool $need_cache
+     * @return $this
+     */
     public function map($key,$obj = null,$need_cache = false){
         $this->clearCache($key);
         if (is_null($obj)) {
@@ -29,14 +45,31 @@ class Injector implements InjectorInterface
         return $this;
     }
 
+    /**
+     * map an instantiated object
+     * @param $key
+     * @param $data
+     */
     public function mapData($key,$data){
         $this->data[$key] = $data;
     }
 
+    /**
+     * map an object that not instantiated and cache it after produce
+     * @param $key
+     * @param null $class
+     * @return Injector
+     */
     public function mapSingleton($key,$class = null){
         return $this->map($key,$class,true);
     }
 
+    /**
+     * get an object
+     * @param $key
+     * @return mixed
+     * @throws InjectorException
+     */
     public function get($key){
         if(isset($this->objects[$key])){
             return $this->objects[$key];
@@ -44,10 +77,20 @@ class Injector implements InjectorInterface
         throw new InjectorException("obj $key not found");
     }
 
+    /**
+     * clear the cached objects
+     * @param $key
+     */
     public function clearCache($key){
         unset($this->caches[$key]);
     }
 
+    /**
+     * get an instantiated object mapped
+     * @param $key
+     * @return mixed
+     * @throws InjectorException
+     */
     public function getData($key){
         if(isset($this->data[$key])){
             return $this->data[$key];
@@ -55,24 +98,54 @@ class Injector implements InjectorInterface
         throw new InjectorException("data $key not found");
     }
 
+    /**
+     * get a cached object
+     * @param $key
+     * @return mixed|null
+     */
     public function getCache($key){
         return isset($this->caches[$key]) ? $this->caches[$key] : null;
     }
 
-    public function produce($key,$params = array()){
+    /**
+     * produce a concrete
+     * @param $key
+     * @param $params
+     * @param bool $enable_reflect if $enable_reflect is true,it won't try to reflect for an unmapped concrete
+     * @return mixed|object
+     * @throws InjectorException
+     */
+    public function produce($key,$params = array(),$enable_reflect = true){
         //if in data
         if(isset($this->data[$key])) return $this->data[$key];
         //if cached
         if(isset($this->caches[$key])) return $this->caches[$key];
-        $obj = $this->get($key);
-        $concrete = $obj[self::INDEX_CONCRETE];
+        //if obj
+        if(isset($this->objects[$key])){
+            $obj = $this->get($key);
+            $concrete = $obj[self::INDEX_CONCRETE];
+        }else{
+            if($this->MUST_REG || !$enable_reflect){
+                throw new InjectorException("$key not registered");
+            }else{
+                $concrete = $key;
+                $not_reg = true;
+            }
+        }
         $result = $this->build($concrete,$params);
-        if($obj[self::INDEX_CACHED] === true){
+        if($not_reg === true || $obj[self::INDEX_CACHED] === true){
             $this->caches[$key] = $result;
         }
         return $result;
     }
 
+    /**
+     * build concrete (a Closure or an object)
+     * @param $concrete
+     * @param array $params
+     * @return object
+     * @throws InjectorException
+     */
     public function build($concrete,$params = array()){
         //if closure
         if($concrete instanceof Closure){
@@ -89,6 +162,13 @@ class Injector implements InjectorInterface
         return $ref->newInstanceArgs($args);
     }
 
+    /**
+     * fill the params(keys) by the values given and objects in Injector container
+     * @param array $params
+     * @param array $value_given
+     * @return array
+     * @throws InjectorException
+     */
     public function apply(array $params,$value_given = array()){
         $result = array();
         foreach ($params as $param){
@@ -98,7 +178,7 @@ class Injector implements InjectorInterface
                 $class = $param->getClass();
                 $name_to_produce = is_null($class) ? $param->name : $class->name;
                 try{
-                    $temp = $this->produce($name_to_produce);
+                    $temp = $this->produce($name_to_produce,array(),false);
                 }catch (InjectorException $e){
                     if($param->isDefaultValueAvailable()){
                         $temp = $param->getDefaultValue();
@@ -112,10 +192,33 @@ class Injector implements InjectorInterface
         return $result;
     }
 
+    /**
+     * call a closure
+     * @param Closure $c
+     * @param array $params
+     * @return mixed
+     */
     public function call(Closure $c,$params = array()){
         $ref = new ReflectionFunction($c);
         $params_need = $ref->getParameters();
         $args = $this->apply($params_need,$params);
         return $ref->invokeArgs($args);
+    }
+
+    /**
+     * call a method in class
+     * @param $class_name
+     * @param $action
+     * @param array $params
+     * @return mixed
+     * @throws InjectorException
+     */
+    public function callInClass($class_name,$action,$params = array()){
+        $ref = new ReflectionMethod($class_name, $action);
+        if(!$ref->isPublic() && !$ref->isStatic()) throw new InjectorException("$class_name->$action is not public or static");
+        $params_need = $ref->getParameters();
+        $args = $this->apply($params_need,$params);
+        $obj = $this->produce($class_name);
+        return $ref->invokeArgs($obj,$args);
     }
 }
