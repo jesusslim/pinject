@@ -6,7 +6,7 @@
  * Time: 上午11:15
  */
 
-namespace Injector;
+namespace Inject;
 
 use Exception;
 class InjectorException extends Exception

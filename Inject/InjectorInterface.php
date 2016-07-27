@@ -6,7 +6,7 @@
  * Time: 下午5:42
  */
 
-namespace Injector;
+namespace Inject;
 
 
 interface InjectorInterface

@@ -6,7 +6,7 @@
  * Time: 下午5:44
  */
 
-namespace Injector;
+namespace Inject;
 
 use Closure;
 use ReflectionClass;

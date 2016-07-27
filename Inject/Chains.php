@@ -6,7 +6,7 @@
  * Time: 下午10:23
  */
 
-namespace Injector;
+namespace Inject;
 
 use Closure;
 class Chains
