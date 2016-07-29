@@ -16,6 +16,6 @@ interface InjectorInterface
 
     public function get($k);
 
-    public function build($k,$params = array());
+    public function produce($k,$params = array());
 
 }

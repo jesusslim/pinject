@@ -221,4 +221,19 @@ class Injector implements InjectorInterface
         $obj = $this->produce($class_name);
         return $ref->invokeArgs($obj,$args);
     }
+
+    /**
+     * batch trigger the action of objects
+     * @param $names
+     * @param $action
+     * @param array ...$args
+     */
+    public function trigger($names,$action,...$args){
+        foreach ($names as $name){
+            $concrete = $this->produce($name);
+            if(is_object($concrete) && method_exists($concrete,$action)){
+                $concrete->$action(...$args);
+            }
+        }
+    }
 }
