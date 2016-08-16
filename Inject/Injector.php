@@ -230,9 +230,13 @@ class Injector implements InjectorInterface
      */
     public function trigger($names,$action,...$args){
         foreach ($names as $name){
-            $concrete = $this->produce($name);
-            if(is_object($concrete) && method_exists($concrete,$action)){
-                $concrete->$action(...$args);
+            if($name instanceof Closure){
+                call_user_func($name,...$args);
+            }else{
+                $concrete = $this->produce($name);
+                if(is_object($concrete) && method_exists($concrete,$action)){
+                    $concrete->$action(...$args);
+                }
             }
         }
     }
