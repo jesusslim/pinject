@@ -18,4 +18,7 @@ interface InjectorInterface
 
     public function produce($k,$params = array());
 
+    public function call(\Closure $c,$p = array());
+
+    public function callInClass($c,$a,$p = array());
 }

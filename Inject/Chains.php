@@ -12,6 +12,7 @@ use Closure;
 class Chains
 {
 
+    /** @var  \Inject\InjectorInterface $context */
     protected $context;
 
     protected $handlers;
