@@ -47,7 +47,13 @@ class Chains
         $handlers_registered = $this->handlers;
         $last_handler = array_pop($handlers_registered);
         $last = function($data) use ($last_handler){
-            return call_user_func($last_handler,$data);
+            if($last_handler instanceof Closure){
+                return call_user_func($last_handler,$data);
+            }elseif (!is_object($last_handler)){
+                $last_handler = $this->context->produce($last_handler);
+            }
+            $args = [$data];
+            return call_user_func_array([$last_handler,$this->action],$args);
         };
         $handlers = array_reverse($handlers_registered);
         return call_user_func(array_reduce($handlers,$this->walk(),$last),$this->req);
