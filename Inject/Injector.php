@@ -202,7 +202,8 @@ class Injector implements InjectorInterface
         $ref = new ReflectionFunction($c);
         $params_need = $ref->getParameters();
         $args = $this->apply($params_need,$params);
-        return $ref->invokeArgs($args);
+        return call_user_func_array($c,$args);
+        //return $ref->invokeArgs($args);
     }
 
     /**
@@ -219,7 +220,8 @@ class Injector implements InjectorInterface
         $params_need = $ref->getParameters();
         $args = $this->apply($params_need,$params);
         $obj = $this->produce($class_name);
-        return $ref->invokeArgs($obj,$args);
+        return call_user_func_array([$obj,$action],$args);
+        //return $ref->invokeArgs($obj,$args);
     }
 
     /**

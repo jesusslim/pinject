@@ -80,4 +80,12 @@ class Chains
             };
         };
     }
+
+    public function runWild(){
+        foreach ($this->handlers as $handler){
+            $rtn = $handler instanceof Closure ? $this->context->call($handler) : $this->context->callInClass($handler,$this->action);
+            if (!is_null($rtn)) return $rtn;
+        }
+        return null;
+    }
 }
