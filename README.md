@@ -79,3 +79,24 @@ Example:
     //or use runWith($your_last_chain_func);
     
 We can chain a Closure or a class into the chains.If it's a class,it will call the method named 'handle'.Every Closure or method for handle,should have two paramters:the data passing by in the chains,and the next handler.And at last of each chain,we shoule call the next handler if it's success.
+
+Another way to use chains:
+
+Another way to use chains is that use runWild instead of run/runWith,and it's more like the useage of Martini/Injector in golang.
+
+Example:
+
+	$chains = new \Inject\Chains($app);
+	$app->mapData('any_param_here','Example');
+	$the_given_params_for_handlers = [
+    	'seems_wild' => 'OK'
+	];
+	$rtn = $chains->chain(function($any_param_here,$seems_wild){
+    	var_dump($any_param_here.' is '.$seems_wild);
+	})->chain(function(){
+    	return "END";
+	})->data($the_given_params_for_handlers)
+    ->runWild();
+	var_dump($rtn);
+	
+As we see here,the difference between runWild and run/runWith is that,runWild support any kind of handlers,and any handler return anything will break the loop and return the result.

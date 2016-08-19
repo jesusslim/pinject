@@ -43,6 +43,9 @@ class Chains
         return $this;
     }
 
+    /***** run/runWith *****/
+    // when use run/runWith,handler should be like "func($data,$next)" and return "$next($data)"
+
     public function run(){
         $handlers_registered = $this->handlers;
         $last_handler = array_pop($handlers_registered);
@@ -81,9 +84,12 @@ class Chains
         };
     }
 
+    /***** runWild *****/
+    // when use runWild , any handler return anything will break the loop and return
+
     public function runWild(){
         foreach ($this->handlers as $handler){
-            $rtn = $handler instanceof Closure ? $this->context->call($handler) : $this->context->callInClass($handler,$this->action);
+            $rtn = $handler instanceof Closure ? $this->context->call($handler,$this->req) : $this->context->callInClass($handler,$this->action,$this->req);
             if (!is_null($rtn)) return $rtn;
         }
         return null;
