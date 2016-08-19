@@ -43,11 +43,20 @@ class Chains
         return $this;
     }
 
+    /***** run/runWith *****/
+    // when use run/runWith,handler should be like "func($data,$next)" and return "$next($data)"
+
     public function run(){
         $handlers_registered = $this->handlers;
         $last_handler = array_pop($handlers_registered);
         $last = function($data) use ($last_handler){
-            return call_user_func($last_handler,$data);
+            if($last_handler instanceof Closure){
+                return call_user_func($last_handler,$data);
+            }elseif (!is_object($last_handler)){
+                $last_handler = $this->context->produce($last_handler);
+            }
+            $args = [$data];
+            return call_user_func_array([$last_handler,$this->action],$args);
         };
         $handlers = array_reverse($handlers_registered);
         return call_user_func(array_reduce($handlers,$this->walk(),$last),$this->req);
@@ -73,5 +82,16 @@ class Chains
                 return call_user_func_array([$func_now,$this->action],$args);
             };
         };
+    }
+
+    /***** runWild *****/
+    // when use runWild , any handler return anything will break the loop and return
+
+    public function runWild(){
+        foreach ($this->handlers as $handler){
+            $rtn = $handler instanceof Closure ? $this->context->call($handler,$this->req) : $this->context->callInClass($handler,$this->action,$this->req);
+            if (!is_null($rtn)) return $rtn;
+        }
+        return null;
     }
 }

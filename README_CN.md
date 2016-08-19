@@ -81,3 +81,24 @@ Example:
     //or use runWith($your_last_chain_func);
     
 chain接收一个闭包函数或者一个类名，如果是类名则会用pinject去实例化，并调用该实例的handle方法(默认handle 可用action方法去设置具体调用什么方法)。所有闭包或者处理方法都必须接收以下两个参数:一个是在链式操作内传递的对象/数组,第二个是下一个处理chain。如果处理完毕没有问题并且可用继续，则必须调用下一个方法并传递参数。
+
+另一种用法:
+
+另一种用法是使用runWild方法替代run/runWith,类似于golang Martini/Injector的用法。
+
+例子:
+
+	$chains = new \Inject\Chains($app);
+	$app->mapData('any_param_here','Example');
+	$the_given_params_for_handlers = [
+    	'seems_wild' => 'OK'
+	];
+	$rtn = $chains->chain(function($any_param_here,$seems_wild){
+    	var_dump($any_param_here.' is '.$seems_wild);
+	})->chain(function(){
+    	return "END";
+	})->data($the_given_params_for_handlers)
+    ->runWild();
+	var_dump($rtn);
+	
+两者的区别在于，run/runWith限定了每一环的handler的入参，必须为传递的对象以及下一环调用，而runWild可以接收任意形式的handler作为一环，但是只要其中某一环的handler返回了任何内容，循环就会结束并返回结果。

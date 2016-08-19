@@ -17,7 +17,7 @@ class Injector implements InjectorInterface
 
     const INDEX_CONCRETE = 0; //the concrete
     const INDEX_CACHED = 1; //cached it after produce
-    protected $objects = []; //the objects not instantiated when map
+    protected $objects = []; //the objects not instantiated when map or closures
     protected $caches = []; //caches of the produced objects
     protected $data = []; //the objects instantiated when map
     protected $MUST_REG = false; //is MUST_REG is true,Inject won't produce the concrete unmapped
@@ -41,7 +41,7 @@ class Injector implements InjectorInterface
         if (is_null($obj)) {
             $obj = $key;
         }
-        $this->objects[$key] = array_values(compact('obj','need_cache'));
+        $this->objects[$key] = [$obj,$need_cache];
         return $this;
     }
 
@@ -120,7 +120,7 @@ class Injector implements InjectorInterface
         if(isset($this->data[$key])) return $this->data[$key];
         //if cached
         if(isset($this->caches[$key])) return $this->caches[$key];
-        //if obj
+        //if obj/closure
         if(isset($this->objects[$key])){
             $obj = $this->get($key);
             $concrete = $obj[self::INDEX_CONCRETE];
@@ -202,7 +202,8 @@ class Injector implements InjectorInterface
         $ref = new ReflectionFunction($c);
         $params_need = $ref->getParameters();
         $args = $this->apply($params_need,$params);
-        return $ref->invokeArgs($args);
+        return call_user_func_array($c,$args);
+        //return $ref->invokeArgs($args);
     }
 
     /**
@@ -219,21 +220,7 @@ class Injector implements InjectorInterface
         $params_need = $ref->getParameters();
         $args = $this->apply($params_need,$params);
         $obj = $this->produce($class_name);
-        return $ref->invokeArgs($obj,$args);
-    }
-
-    /**
-     * batch trigger the action of objects
-     * @param $names
-     * @param $action
-     * @param array ...$args
-     */
-    public function trigger($names,$action,...$args){
-        foreach ($names as $name){
-            $concrete = $this->produce($name);
-            if(is_object($concrete) && method_exists($concrete,$action)){
-                $concrete->$action(...$args);
-            }
-        }
+        return call_user_func_array([$obj,$action],$args);
+        //return $ref->invokeArgs($obj,$args);
     }
 }
