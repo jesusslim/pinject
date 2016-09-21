@@ -55,6 +55,16 @@ class Injector implements InjectorInterface
     }
 
     /**
+     * map instantiated objects
+     * @param $kvs
+     */
+    public function mapDatas($kvs){
+        foreach ($kvs as $k => $v){
+            $this->mapData($k,$v);
+        }
+    }
+
+    /**
      * map an object that not instantiated and cache it after produce
      * @param $key
      * @param null $class
@@ -62,6 +72,16 @@ class Injector implements InjectorInterface
      */
     public function mapSingleton($key,$class = null){
         return $this->map($key,$class,true);
+    }
+
+    /**
+     * map singletons
+     * @param $kvs
+     */
+    public function mapSingletons($kvs){
+        foreach ($kvs as $k => $v){
+            $this->mapSingleton($k,$v);
+        }
     }
 
     /**
