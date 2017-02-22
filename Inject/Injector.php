@@ -12,7 +12,8 @@ use Closure;
 use ReflectionClass;
 use ReflectionFunction;
 use ReflectionMethod;
-class Injector implements InjectorInterface
+use ArrayAccess;
+class Injector implements InjectorInterface,ArrayAccess
 {
 
     const INDEX_CONCRETE = 0; //the concrete
@@ -169,7 +170,8 @@ class Injector implements InjectorInterface
     public function build($concrete,$params = array()){
         //if closure
         if($concrete instanceof Closure){
-            return $concrete($this,$params);
+            return $this->call($concrete,$params);
+//            return $concrete($this,$params);
         }
         //reflect
         $ref = new ReflectionClass($concrete);
@@ -243,4 +245,33 @@ class Injector implements InjectorInterface
         return call_user_func_array([$obj,$action],$args);
         //return $ref->invokeArgs($obj,$args);
     }
+
+    /**** implement methods of ArrayAccess ****/
+
+    public function offsetExists($offset)
+    {
+        return isset($this->objects[$offset]) || isset($this->caches[$offset]) || isset($this->data[$offset]);
+    }
+
+    public function offsetGet($offset)
+    {
+        return $this->produce($offset);
+    }
+
+    public function offsetSet($offset, $value)
+    {
+        if (! $value instanceof Closure){
+            $value = function () use ($value) {
+                return $value;
+            };
+        }
+        $this->map($offset,$value);
+    }
+
+    public function offsetUnset($offset)
+    {
+        unset($this->objects[$offset],$this->caches[$offset],$this->data[$offset]);
+    }
+
+
 }
