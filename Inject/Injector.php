@@ -273,5 +273,9 @@ class Injector implements InjectorInterface,ArrayAccess
         unset($this->objects[$offset],$this->caches[$offset],$this->data[$offset]);
     }
 
-
+    public function flush(){
+        $this->objects = [];
+        $this->data = [];
+        $this->caches = [];
+    }
 }
