@@ -21,11 +21,22 @@ class Chains
 
     protected $req;
 
+    protected $complex_result_checkers;
+
+    private $enable_complex;
+
     public function __construct($context)
     {
         $this->context = $context;
         $this->handlers = [];
         $this->action = 'handle';
+        $this->complex_result_checkers = [];
+        $this->enable_complex = false;
+    }
+
+    public function enableComplex(){
+        $this->enable_complex = true;
+        return $this;
     }
 
     public function data($data){
@@ -35,6 +46,12 @@ class Chains
 
     public function chain($handlers = array()){
         $this->handlers = array_merge($this->handlers,is_array($handlers) ? $handlers : func_get_args());
+        return $this;
+    }
+
+    public function complex($handler,Closure $checker){
+        $this->handlers[] = $handler;
+        $this->complex_result_checkers[count($this->handlers) - 1] = $checker;
         return $this;
     }
 
@@ -88,8 +105,11 @@ class Chains
     // when use runWild , any handler return anything will break the loop and return
 
     public function runWild(){
-        foreach ($this->handlers as $handler){
+        foreach ($this->handlers as $index => $handler){
             $rtn = $handler instanceof Closure ? $this->context->call($handler,$this->req) : $this->context->callInClass($handler,$this->action,$this->req);
+            if ($this->enable_complex && isset($this->complex_result_checkers[$index])){
+                $rtn = call_user_func($this->complex_result_checkers[$index],$rtn);
+            }
             if (!is_null($rtn)) return $rtn;
         }
         return null;
