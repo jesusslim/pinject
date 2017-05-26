@@ -9,7 +9,7 @@
 namespace Inject;
 
 use Closure;
-class Chains
+class Chains implements ChainsInterface
 {
 
     /** @var  \Inject\InjectorInterface $context */
