@@ -14,6 +14,8 @@ interface InjectorInterface
 
     public function map($k,$v,$c);
 
+    public function mapDatas($kvs);
+
     public function get($k);
 
     public function produce($k,$params = array());
