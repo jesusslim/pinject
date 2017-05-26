@@ -241,7 +241,7 @@ class Injector implements InjectorInterface,ArrayAccess
         if(!$ref->isPublic() && !$ref->isStatic()) throw new InjectorException("$class_name->$action is not public or static");
         $params_need = $ref->getParameters();
         $args = $this->apply($params_need,$params);
-        $obj = $this->produce($class_name);
+        $obj = $this->produce($class_name,$params);
         return call_user_func_array([$obj,$action],$args);
         //return $ref->invokeArgs($obj,$args);
     }
